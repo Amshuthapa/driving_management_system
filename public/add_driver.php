@@ -55,7 +55,7 @@ $controller->add();
                     </div>
 
                     <div class="card-body p-4">
-                        <form method="POST" action="add.php">
+                        <form method="POST" action="add_driver.php">
                             
                             <!-- Name Field -->
                             <div class="mb-3">
