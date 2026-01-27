@@ -1,18 +1,18 @@
 <?php
 session_start();
 require_once '../config/db.php';
-require_once '../controllers/DriverController.php';
+require_once '../controllers/StudentController.php';
 
 $pdo = (new \Config\Database())->connect();
-$driverCtrl = new DriverController($pdo);
-$response = $driverCtrl->handleAddDriver();
+$studentCtrl = new StudentController($pdo);
+$response = $studentCtrl->handleAddStudent(); // Uses the logic we built earlier
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Register Tutor | Driving System</title>
+    <title>Register Student | Driving System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --primary: #6366f1; --glass: rgba(255, 255, 255, 0.03); --border: rgba(255, 255, 255, 0.1); }
@@ -25,32 +25,35 @@ $response = $driverCtrl->handleAddDriver();
 </head>
 <body>
     <?php include('../includes/navbar.php'); ?>
+
     <main>
         <div class="glass-card">
-            <h2 style="margin-top:0">Register New Tutor</h2>
-            <p style="color:#94a3b8; margin-bottom: 2rem;">Create a new instructor account.</p>
+            <h2 style="margin-top:0">Register New Student</h2>
+            <p style="color:#94a3b8; margin-bottom: 2rem;">Create a new student account.</p>
             
             <?php if($response): ?>
                 <div style="color: <?= $response['success'] ? '#4ade80' : '#f87171' ?>; margin-bottom: 1rem;">
-                    <?= htmlspecialchars($response['message']) ?>
+                    <?= $response['message'] ?>
                 </div>
             <?php endif; ?>
 
             <form method="POST">
                 <input type="text" name="fullname" placeholder="Full Name" required>
-
                 <input type="email" name="email" placeholder="Email Address" required>
-
-                <!-- NEW: Phone Number -->
                 <input type="text" name="phonenumber" placeholder="Phone Number">
-
                 <input type="password" name="password" placeholder="Temporary Password" required>
 
+                <!-- Optional: assignment fields (can remove for now) -->
+                <!--
+                <input type="number" name="vehicle_assigned_id" placeholder="Vehicle ID">
+                <input type="number" name="driver_assigned_id" placeholder="Driver ID">
+                -->
+
                 <button type="submit" name="add_new_person" class="btn">
-                    Register Tutor
+                    Register Student
                 </button>
 
-                <a href="manage_drivers.php"
+                <a href="manage_students.php"
                    style="display:block; text-align:center; margin-top:1.5rem; color:#94a3b8; text-decoration:none; font-size:0.9rem;">
                     Back to Directory
                 </a>
