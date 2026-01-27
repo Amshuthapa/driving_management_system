@@ -43,12 +43,6 @@ $response = $studentCtrl->handleAddStudent(); // Uses the logic we built earlier
                 <input type="text" name="phonenumber" placeholder="Phone Number">
                 <input type="password" name="password" placeholder="Temporary Password" required>
 
-                <!-- Optional: assignment fields (can remove for now) -->
-                <!--
-                <input type="number" name="vehicle_assigned_id" placeholder="Vehicle ID">
-                <input type="number" name="driver_assigned_id" placeholder="Driver ID">
-                -->
-
                 <button type="submit" name="add_new_person" class="btn">
                     Register Student
                 </button>
