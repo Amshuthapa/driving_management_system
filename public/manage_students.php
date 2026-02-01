@@ -113,6 +113,7 @@ function fmtDT($dt){
       border-radius:1.25rem;
       padding:1.5rem;
       box-shadow: 0 18px 45px -30px rgba(0,0,0,0.7);
+      margin-bottom: 1rem;
     }
 
     .alert{
@@ -128,6 +129,35 @@ function fmtDT($dt){
     }
     .alert-success{ color:var(--success); border-color: rgba(74,222,128,0.25); }
     .alert-error{ color:var(--error); border-color: rgba(248,113,113,0.25); }
+
+    /* SEARCH */
+    .search-row{
+      display:flex;
+      gap:.75rem;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .search-row input{
+      flex:1;
+      min-width:240px;
+      padding:.85rem .9rem;
+      background:rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:.9rem;
+      color:white;
+    }
+
+    .search-row input:focus{
+      outline:none;
+      border-color:rgba(37,99,235,.7);
+      box-shadow:0 0 0 3px rgba(37,99,235,.18);
+    }
+
+    .match-count{
+      color:var(--text-muted);
+      font-weight:700;
+    }
 
     /* Table */
     .table-container{ overflow-x:auto; }
@@ -154,7 +184,6 @@ function fmtDT($dt){
 
     tr:hover td{ background: rgba(255,255,255,0.03); }
 
-    .id-muted{ color:var(--text-muted); }
     .name-strong{ font-weight:700; }
 
     .pill{
@@ -204,6 +233,7 @@ function fmtDT($dt){
       background: rgba(255,255,255,0.06);
       color:#e2e8f0;
       transition: transform .15s ease, opacity .15s ease, border-color .15s ease;
+      cursor: pointer;
     }
     .btn-icon:hover{ opacity:.95; transform: translateY(-1px); border-color: rgba(37,99,235,0.35); }
     .btn-icon.del:hover{ border-color: rgba(248,113,113,0.35); color:#fecaca; }
@@ -305,9 +335,17 @@ function fmtDT($dt){
       </div>
     <?php endif; ?>
 
+    <!-- ✅ SEARCH CARD -->
+    <div class="glass-card">
+      <div class="search-row">
+        <input id="studentSearch" type="text" placeholder="Search by name, email, phone, vehicle, or driver…">
+        <div id="matchCount" class="match-count"></div>
+      </div>
+    </div>
+
     <div class="glass-card">
       <div class="table-container">
-        <table>
+        <table id="studentsTable">
           <thead>
             <tr>
               <th>Full Name</th>
@@ -321,31 +359,40 @@ function fmtDT($dt){
           </thead>
           <tbody>
             <?php if (empty($students)): ?>
-              <tr><td colspan="8" class="empty-row">No students found.</td></tr>
+              <tr><td colspan="7" class="empty-row">No students found.</td></tr>
             <?php else: ?>
               <?php foreach ($students as $s): ?>
                 <?php
                   $vehicleText = $s['vehicle_no']
-                    ? $s['vehicle_no'].' — '.$s['vehicle_model']
-                    : '';
-                  $driverText = $s['driver_name'] ?? '';
+                    ? ($s['vehicle_no'].' — '.$s['vehicle_model'])
+                    : 'Unassigned';
+
+                  $driverText = !empty($s['driver_name']) ? $s['driver_name'] : 'Unassigned';
+
+                  $searchBlob = strtolower(
+                    ($s['fullname'] ?? '') . ' ' .
+                    ($s['email'] ?? '') . ' ' .
+                    ($s['phonenumber'] ?? '') . ' ' .
+                    ($vehicleText ?? '') . ' ' .
+                    ($driverText ?? '')
+                  );
                 ?>
-                <tr>
+                <tr class="student-row" data-search="<?= h($searchBlob) ?>">
                   <td class="name-strong"><?= h($s['fullname']) ?></td>
                   <td><?= h($s['email']) ?></td>
                   <td><?= h(($s['phonenumber'] ?? '') !== '' ? $s['phonenumber'] : 'N/A') ?></td>
 
                   <td>
-                    <?php if (!empty($vehicleText)): ?>
-                      <span class="plate-badge"><?= h($vehicleText) ?></span>
+                    <?php if ($s['vehicle_no']): ?>
+                      <span class="plate-badge"><?= h($s['vehicle_no'].' — '.$s['vehicle_model']) ?></span>
                     <?php else: ?>
                       <span class="pill pill-unassigned"><i class="fa-solid fa-link-slash"></i> Unassigned</span>
                     <?php endif; ?>
                   </td>
 
                   <td>
-                    <?php if (!empty($driverText)): ?>
-                      <span class="pill"><i class="fa-solid fa-user-tie"></i> <?= h($driverText) ?></span>
+                    <?php if (!empty($s['driver_name'])): ?>
+                      <span class="pill"><i class="fa-solid fa-user-tie"></i> <?= h($s['driver_name']) ?></span>
                     <?php else: ?>
                       <span class="pill pill-unassigned"><i class="fa-solid fa-link-slash"></i> Unassigned</span>
                     <?php endif; ?>
@@ -396,6 +443,7 @@ function fmtDT($dt){
   </div>
 
   <script>
+    // Delete modal
     const deleteModal = document.getElementById('deleteModal');
     const studentName = document.getElementById('studentName');
     const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
@@ -417,6 +465,28 @@ function fmtDT($dt){
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeDeleteModal();
     });
+
+    // Search
+    const input = document.getElementById('studentSearch');
+    const rows = document.querySelectorAll('.student-row');
+    const matchCount = document.getElementById('matchCount');
+
+    function filterStudents(){
+      const q = input.value.toLowerCase().trim();
+      let visible = 0;
+
+      rows.forEach(r => {
+        const text = (r.dataset.search || '');
+        const show = text.includes(q);
+        r.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+
+      matchCount.textContent = rows.length ? `${visible} of ${rows.length}` : '';
+    }
+
+    input.addEventListener('input', filterStudents);
+    filterStudents();
   </script>
 </body>
 </html>

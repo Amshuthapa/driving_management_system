@@ -121,6 +121,29 @@ function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
       outline: none;
     }
 
+    input:focus{
+      border-color: rgba(37,99,235,0.7);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.18);
+    }
+
+    /* ✅ SEARCH */
+    .search-row{
+      display:flex;
+      gap:.75rem;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .search-row input{
+      flex:1;
+      min-width:240px;
+    }
+    .match-count{
+      color:var(--text-muted);
+      font-weight:700;
+      white-space:nowrap;
+    }
+
     .btn {
       border: none;
       padding: 0.85rem 1.1rem;
@@ -162,6 +185,7 @@ function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing:.06em;
+      white-space:nowrap;
     }
     td { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.06); vertical-align:middle; }
     tr:hover td{ background: rgba(255,255,255,0.03); }
@@ -253,10 +277,21 @@ function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
       </form>
     </div>
 
+    <!-- ✅ SEARCH -->
+    <div class="glass-card">
+      <div class="search-row">
+        <div style="width:100%;">
+          <label style="margin:0 0 .5rem;">Search Vehicles</label>
+          <input id="vehicleSearch" type="text" placeholder="Search by ID, model, or vehicle number…">
+        </div>
+        <div id="matchCount" class="match-count"></div>
+      </div>
+    </div>
+
     <!-- Vehicle List -->
     <div class="glass-card">
       <div style="overflow-x:auto;">
-        <table>
+        <table id="vehiclesTable">
           <thead>
             <tr>
               <th style="width:90px;">ID</th>
@@ -274,7 +309,14 @@ function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
               </tr>
             <?php else: ?>
               <?php foreach ($vehicles as $v): ?>
-                <tr>
+                <?php
+                  $blob = strtolower(
+                    '#'.$v['vehicle_id'].' '.
+                    ($v['vehicle_model'] ?? '').' '.
+                    ($v['vehicle_no'] ?? '')
+                  );
+                ?>
+                <tr class="vehicle-row" data-search="<?= h($blob) ?>">
                   <td style="color:var(--text-muted);">#<?= (int)$v['vehicle_id'] ?></td>
                   <td><?= h($v['vehicle_model']) ?></td>
                   <td><span class="plate-badge"><?= h($v['vehicle_no']) ?></span></td>
@@ -359,6 +401,28 @@ function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeEditModal();
     });
+
+    // ✅ Search
+    const input = document.getElementById('vehicleSearch');
+    const rows = document.querySelectorAll('.vehicle-row');
+    const matchCount = document.getElementById('matchCount');
+
+    function filterVehicles(){
+      const q = (input.value || '').toLowerCase().trim();
+      let visible = 0;
+
+      rows.forEach(r => {
+        const text = r.dataset.search || '';
+        const show = text.includes(q);
+        r.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+
+      matchCount.textContent = rows.length ? `${visible} of ${rows.length}` : '';
+    }
+
+    input.addEventListener('input', filterVehicles);
+    filterVehicles();
   </script>
 </body>
 </html>

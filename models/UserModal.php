@@ -72,4 +72,5 @@ class UserModel {
         $stmt->execute([$searchQuery, $searchQuery]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    
 }

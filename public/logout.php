@@ -1,31 +1,26 @@
 <?php
-// logout.php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+session_start();
 
-// Unset all session variables
+/* Unset all session data */
 $_SESSION = [];
 
-// Destroy session
+/* Destroy session */
 session_destroy();
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Logging out...</title>
-</head>
-<body>
 
-<script>
-    // Clear any client-side state (safe even if unused)
-    localStorage.clear();
-    sessionStorage.clear();
+/* Remove session cookie */
+if (ini_get("session.use_cookies")) {
+    $params = session_get_cookie_params();
+    setcookie(
+        session_name(),
+        '',
+        time() - 42000,
+        $params["path"],
+        $params["domain"],
+        $params["secure"],
+        $params["httponly"]
+    );
+}
 
-    // Redirect to public home page
-    window.location.href = "index.php";
-</script>
-
-</body>
-</html>
+/* Redirect immediately */
+header("Location: index.php");
+exit;

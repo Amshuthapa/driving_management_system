@@ -331,4 +331,19 @@ class StudentController {
     return $res;
 }
 
+    // ===== ADD THIS INSIDE class StudentController { ... } =====
+
+public function getDashboardStudent() {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+
+    if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'student') {
+        header("Location: login.php");
+        exit();
+    }
+
+    return $this->studentModel->getStudentDashboardByUserId((int)$_SESSION['user_id']);
+}
+
+
+
 }

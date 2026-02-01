@@ -33,14 +33,9 @@ class StudentModel {
             FROM Students s
             JOIN Users u ON s.user_id = u.user_id
 
-            LEFT JOIN Vehicles v 
-                ON s.vehicle_assigned_id = v.vehicle_id
-
-            LEFT JOIN Drivers d 
-                ON s.driver_assigned_id = d.driver_id
-
-            LEFT JOIN Users du 
-                ON d.user_id = du.user_id
+            LEFT JOIN Vehicles v ON s.vehicle_assigned_id = v.vehicle_id
+            LEFT JOIN Drivers d ON s.driver_assigned_id = d.driver_id
+            LEFT JOIN Users du ON d.user_id = du.user_id
 
             ORDER BY s.student_id DESC
         ";
@@ -102,8 +97,7 @@ class StudentModel {
     }
 
     /**
-     * Update user basic info (admin)
-     * Keep booking/assignment unchanged unless specifically updated elsewhere
+     * Admin: update student user's basic info only
      */
     public function updateStudentUserInfo($student_id, $user_id, $fullname, $email, $phonenumber) {
         try {
@@ -116,7 +110,7 @@ class StudentModel {
             ");
             $stmt1->execute([$fullname, $email, $phonenumber, $user_id]);
 
-            // If you want to ensure student exists:
+            // optional: make sure student exists
             $stmt2 = $this->db->prepare("UPDATE Students SET student_id = student_id WHERE student_id = ?");
             $stmt2->execute([$student_id]);
 
@@ -129,7 +123,7 @@ class StudentModel {
     }
 
     /**
-     * Create student entry (after Users insert with role='student')
+     * Create student entry
      */
     public function createStudentEntry($user_id) {
         $stmt = $this->db->prepare("
@@ -140,8 +134,7 @@ class StudentModel {
     }
 
     /**
-     * Student: request a booking slot (date+time) -> status requested
-     * Admin will assign driver + vehicle later
+     * Student: request booking by user_id
      */
     public function requestBooking($user_id, $requested_date, $requested_time) {
         $stmt = $this->db->prepare("
@@ -159,20 +152,37 @@ class StudentModel {
     }
 
     /**
-     * Student: cancel their booking request (or assigned booking)
+     * Admin booking: request booking by student_id
+     */
+    public function requestBookingByStudentId($student_id, $requested_date, $requested_time) {
+        $stmt = $this->db->prepare("
+            UPDATE Students
+            SET
+                requested_date = ?,
+                requested_time = ?,
+                booking_status = 'requested',
+                driver_assigned_id = NULL,
+                vehicle_assigned_id = NULL,
+                assigned_at = NULL
+            WHERE student_id = ?
+        ");
+        return $stmt->execute([$requested_date, $requested_time, $student_id]);
+    }
+
+    /**
+     * Student: cancel
      */
     public function cancelBooking($user_id) {
         $stmt = $this->db->prepare("
             UPDATE Students
-            SET
-                booking_status = 'cancelled'
+            SET booking_status = 'cancelled'
             WHERE user_id = ?
         ");
         return $stmt->execute([$user_id]);
     }
 
     /**
-     * Admin: Assign driver+vehicle ONLY if student has requested slot
+     * Admin: assign driver + vehicle
      */
     public function assignStudent($student_id, $vehicle_assigned_id, $driver_assigned_id) {
         $stmt = $this->db->prepare("
@@ -188,8 +198,7 @@ class StudentModel {
     }
 
     /**
-     * For booking availability checks:
-     * Count available active drivers for a slot (date+time)
+     * Availability: Drivers
      */
     public function countAvailableDrivers($date, $time) {
         $sql = "
@@ -210,7 +219,7 @@ class StudentModel {
     }
 
     /**
-     * Count available active vehicles for a slot (date+time)
+     * Availability: Vehicles
      */
     public function countAvailableVehicles($date, $time) {
         $sql = "
@@ -229,19 +238,43 @@ class StudentModel {
         $stmt->execute([$date, $time]);
         return (int)$stmt->fetchColumn();
     }
-    public function requestBookingByStudentId($student_id, $requested_date, $requested_time) {
-    $stmt = $this->db->prepare("
-        UPDATE Students
-        SET
-            requested_date = ?,
-            requested_time = ?,
-            booking_status = 'requested',
-            driver_assigned_id = NULL,
-            vehicle_assigned_id = NULL,
-            assigned_at = NULL
-        WHERE student_id = ?
-    ");
-    return $stmt->execute([$requested_date, $requested_time, $student_id]);
-}
 
+    /**
+     * Student dashboard details by user_id
+     */
+    public function getStudentDashboardByUserId($user_id) {
+        $sql = "
+            SELECT 
+                s.student_id,
+                s.user_id,
+                s.requested_date,
+                s.requested_time,
+                s.booking_status,
+                s.assigned_at,
+                s.vehicle_assigned_id,
+                s.driver_assigned_id,
+
+                u.fullname,
+                u.email,
+                u.phonenumber,
+
+                v.vehicle_no,
+                v.vehicle_model,
+
+                du.fullname AS driver_name,
+                du.phonenumber AS driver_phone
+
+            FROM Students s
+            JOIN Users u ON s.user_id = u.user_id
+            LEFT JOIN Vehicles v ON s.vehicle_assigned_id = v.vehicle_id
+            LEFT JOIN Drivers d ON s.driver_assigned_id = d.driver_id
+            LEFT JOIN Users du ON d.user_id = du.user_id
+            WHERE s.user_id = ?
+            LIMIT 1
+        ";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$user_id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }
